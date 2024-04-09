@@ -1,7 +1,9 @@
 {
     "name": "antibiotics11/net-socket",
-    "description": "Classes for Socket and Network Programming.",
+    "description": "Utility classes for network programming.",
+    "homepage": "https://github.com/antibiotics11/net-socket",
     "type": "library",
+    "license": "MIT",
     "require": {
         "php": ">=8.3",
         "ext-sockets": "*"
@@ -9,16 +11,13 @@
     "require-dev": {
         "jetbrains/phpstorm-attributes": "^1.0"
     },
-    "license": "MIT",
     "autoload": {
         "psr-4": {
             "antibiotics11\\NetSocket\\": "src/"
         }
     },
-    "authors": [
-        {
-            "name": "ANTIBIOTICS",
-            "email": "abx@abx.pe.kr"
-        }
-    ]
+    "authors": [{
+        "name": "ANTIBIOTICS",
+        "email": "abx@abx.pe.kr"
+    }]
 }
