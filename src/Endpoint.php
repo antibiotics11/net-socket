@@ -12,14 +12,14 @@ final readonly class Endpoint implements Stringable {
 
   /**
    * @param InetAddress $inetAddress
-   * @param int         $port
+   * @param int|null    $port
    * @throws InvalidArgumentException if the port number is invalid.
    */
   public function __construct(
     public InetAddress $inetAddress,
-    public int         $port
+    public ?int        $port         = null
   ) {
-    if ($this->port < 1 || $this->port > 65535) {
+    if ($this->port !== null && ($this->port < 1 || $this->port > 65535)) {
       throw new InvalidArgumentException("Invalid port number: " . $this->port);
     }
   }
@@ -63,7 +63,14 @@ final readonly class Endpoint implements Stringable {
 
   #[Override]
   public function __toString(): string {
-    return $this->inetAddress . ":" . $this->port;
+
+    $address = $this->inetAddress->address;
+    if ($this->inetAddress->addressFamily == InetAddress::ADDRESS_FAMILY_IPV6) {
+      $address = "[" . $address . "]";
+    }
+
+    return $address . ($this->port !== null ? (":" . $this->port) : "");
+
   }
 
 }
