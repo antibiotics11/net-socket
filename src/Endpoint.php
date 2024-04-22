@@ -19,7 +19,7 @@ final readonly class Endpoint implements Stringable {
     public InetAddress $inetAddress,
     public ?int        $port         = null
   ) {
-    if ($this->port !== null && ($this->port < 1 || $this->port > 65535)) {
+    if ($this->port !== null && ($this->port < 0 || $this->port > 65535)) {
       throw new InvalidArgumentException("Invalid port number: " . $this->port);
     }
   }
