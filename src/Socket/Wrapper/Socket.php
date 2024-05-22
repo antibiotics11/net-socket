@@ -2,8 +2,37 @@
 
 namespace antibiotics11\NetSocket\Socket\Wrapper;
 use Socket as RawSocket;
-use antibiotics11\NetSocket\{InetAddress, Endpoint};
+use Throwable;
+use antibiotics11\NetSocket\{Endpoint, InetAddress};
 use JetBrains\PhpStorm\ExpectedValues;
+use function socket_accept;
+use function socket_bind;
+use function socket_connect;
+use function socket_create;
+use function socket_listen;
+use function socket_read;
+use function socket_write;
+use function socket_select;
+use function socket_recv;
+use function socket_recvfrom;
+use function socket_send;
+use function socket_sendto;
+use function socket_close;
+use function socket_shutdown;
+use function socket_atmark;
+use function socket_set_block;
+use function socket_set_nonblock;
+use function socket_set_option;
+use function socket_get_option;
+use function socket_getsockname;
+use function socket_getpeername;
+use function socket_last_error;
+use function socket_strerror;
+use function socket_clear_error;
+use function strlen;
+use function array_keys;
+use function array_intersect_key;
+use function array_flip;
 
 class Socket {
 
@@ -212,15 +241,18 @@ class Socket {
    * @return int the number of sockets ready for reading, writing or having an error.
    * @throws SocketError if the socket_select() call fails.
    */
-  public function select(
-    ?array $readSockets   = null,
-    ?array $writeSockets  = null,
-    ?array $exceptSockets = null,
-    float $timeout = 1
+  public static function select(
+    ?array &$readSockets   = null,
+    ?array &$writeSockets  = null,
+    ?array &$exceptSockets = null,
+    float  $timeout        = 1.0
   ): int {
 
     // prepare arrays of socket resources
-    $getRawSockets = static function (array $sockets): array {
+    $getRawSockets = static function (?array $sockets): ?array {
+      if ($sockets === null) {
+        return null;
+      }
       $rawSockets = [];
       foreach ($sockets as $socket) {
         $rawSockets[] = $socket->getRawSocket();
@@ -228,20 +260,34 @@ class Socket {
       return $rawSockets;
     };
 
-    $read   = $readSockets   === null ? null : $getRawSockets($readSockets);
-    $write  = $writeSockets  === null ? null : $getRawSockets($writeSockets);
-    $except = $exceptSockets === null ? null : $getRawSockets($exceptSockets);
+    // Update the original socket arrays with the selected sockets
+    $updateSockets = static function (?array &$originalSockets, ?array $selectedSockets): void {
+      if ($originalSockets !== null) {
+        $originalSockets = array_intersect_key(
+          $originalSockets,
+          array_flip(array_keys($selectedSockets))
+        );
+      }
+    };
+
+    $read   = $getRawSockets($readSockets);
+    $write  = $getRawSockets($writeSockets);
+    $except = $getRawSockets($exceptSockets);
 
     $seconds      = (int)$timeout;
-    $microSeconds = (int)($timeout - $seconds) * 1000000;
+    $microSeconds = (int)(($timeout - $seconds) * 1000000);
 
-    if (false !== $changedSockets =
-        @socket_select($read, $write, $except, $seconds, $microSeconds)
-    ) {
-      return $changedSockets;
+    try {
+      $result = socket_select($read, $write, $except, $seconds, $microSeconds);
+
+      $updateSockets($readSockets,   $read);
+      $updateSockets($writeSockets,  $write);
+      $updateSockets($exceptSockets, $except);
+
+      return $result;
+    } catch (Throwable $e) {
+      throw new SocketError($e->getMessage(), $e->getCode(), $e);
     }
-    $this->throwErrorFromLastOperation();
-
   }
 
   /**
